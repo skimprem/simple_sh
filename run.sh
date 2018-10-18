@@ -1,7 +1,7 @@
 #!/bin/bash
 
-./build/sh_expand_dh \
-  -in ../gao2018/input_data/GAO2012_30m.xyz \
+./build/sh_expand \
+  -in ../gao2018/input_data/GAOP2018_15m.xyz \
   -out exp_dh.out \
-  -deg 360 \
-  -mode int 
+  -deg 30 \
+  -mode int
