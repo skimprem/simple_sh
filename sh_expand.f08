@@ -41,8 +41,7 @@ program sh_expand
   write(stdout, '(1x, a)', advance = 'no') 'reading grid ...'
   call grid_reader(grid_file, griddh, n)
   write(stdout, *) ' done!'
-  write(stdout, *) 'latitude blocks: ', integer_to_string(n)
-  write(stdout, *) 'longitude blocks: ', integer_to_string(n * 2)
+  write(stdout, *) 'blocks: ', integer_to_string(n), ' x ',  integer_to_string(n * 2)
   select case(sh_method)
   case('dh')
     lmax = n / 2 - 1

@@ -1,6 +1,97 @@
 program sh_makegrid
+  use SHTOOLS
   use subroutines
   implicit none
-  print *, 'hello'
+  real(kind=8), dimension(:,:), allocatable :: grid
+  real(kind=8), dimension(:,:,:), allocatable :: cilm
+  integer(kind=4) :: lmax, nlat, nlon, norm, csphase, dealloc, exitstatus,&
+  stdout, i, j
+  real(kind=8) :: interval, f, a, north, south, east, west
+  character(len=1000) :: arg
+  character(len=:), allocatable :: grid_file, sh_file, sh_method
+  arg = ''
+  norm = 1
+  csphase = 1
+  f = 298.257223563_8
+  a = 6378137._8
+  !north = 90._8
+  north = 89.75_8
+  !south = -90._8
+  south = -89.75_8
+  !east = 360._8
+  east = 359.75_8
+  !west = 0._8
+  west = 0.25_8
+  dealloc = 0
+  stdout = 6
+  i = 0
+  lmax = 0
+  do while(i < command_argument_count())
+    i = i + 1
+    call get_command_argument(i, arg)
+    select case(arg)
+    case('-in')
+      i = i + 1
+      call get_command_argument(i, arg)
+      sh_file = trim(adjustl(arg))
+      write(stdout, *) 'input: ', sh_file
+    case('-out')
+      i = i + 1
+      call get_command_argument(i, arg)
+      grid_file = trim(adjustl(arg))
+      write(stdout, *) 'output: ', grid_file
+    case('-deg')
+      i = i + 1
+      call get_command_argument(i, arg)
+      read(arg, *) lmax
+      write(stdout, *) 'degree: ', integer_to_string(lmax)
+    case('-step')
+      i = i + 1
+      call get_command_argument(i, arg)
+      read(arg, *) interval
+      write(stdout, *) 'step: ', double_to_string(interval)
+    case('-mode')
+      i = i + 1
+      call get_command_argument(i, arg)
+      sh_method = trim(adjustl(arg))
+      write(stdout, *) 'method: ', sh_method
+    end select
+  end do
+  write(stdout, '(1x, a)', advance = 'no') 'reading coeff ...'
+  allocate(cilm(2, lmax + 1, lmax + 1))
+  call sh_reader(sh_file, cilm, lmax)
+  write(stdout, *) ' done!'
+  select case(sh_method)
+  case('int')
+    allocate(grid(int(180._8 / interval + 1, kind = 4), int(360._8 / interval + 1, kind = 4)))
+    grid = 0._8
+    write(stdout, '(1x, a)', advance = 'no') 'makegrid2d() ... '
+    call makegrid2d(&
+      grid,&
+      cilm = cilm,&
+      lmax = lmax,&
+      interval = interval,&
+      nlat = nlat,&
+      nlong = nlon,&
+      norm = norm,&
+      csphase = csphase,&
+      !f = f,&
+      !a = a,&
+      north = north,&
+      south = south,&
+      east = east,&
+      west = west,&
+      dealloc = dealloc,&
+      exitstatus = exitstatus)
+    if(exitstatus == 0) then
+      write(stdout, *) 'done!'
+    else
+      write(stdout, *) 'failed!'
+    end if
+    write(stdout, '(1x, a)', advance = 'no') 'writing grid ... '
+    call grid_writer(grid_file, grid, interval, nlat, nlon, north, west)
+    write(stdout, *) 'done!'
+  case('dh')
+  end select
 
 end program sh_makegrid

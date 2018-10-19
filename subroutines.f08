@@ -31,26 +31,55 @@ subroutine grid_reader(file_name, grid, n)
   close(file_unit)
   return
 end subroutine grid_reader
-subroutine grid_writer()
-  implicit none
-end subroutine grid_writer
-subroutine sh_writer(file_name, coeff, degree)
+subroutine grid_writer(file_name, grid, interval, nlat, nlon, north, west)
   implicit none
   character(*), intent(in) :: file_name
-  real(kind=8), dimension(:,:,:) :: coeff
-  integer(kind=4) :: file_unit, i, j, degree
+  real(kind=8), dimension(:,:), intent(in) :: grid
+  real(kind=8), intent(in) :: interval, north, west
+  integer(kind=4), intent(in) :: nlat, nlon
+  integer(kind=4) :: i, j, file_unit
+  real(kind=8) :: lat, lon
+  open(newunit = file_unit, file = file_name, action = 'write', status = 'replace')
+  lat = north
+  do i = 1, nlat
+    lon = west
+    do j = 1, nlon
+      write(file_unit, *) lat, lon, grid(i, j)
+      lon = lon + interval
+    end do
+    lat = lat - interval
+  end do
+
+end subroutine grid_writer
+subroutine sh_writer(file_name, cilm, lmax)
+  implicit none
+  character(*), intent(in) :: file_name
+  real(kind=8), dimension(:,:,:) :: cilm
+  integer(kind=4) :: file_unit, i, j, lmax
   open(newunit = file_unit, file = file_name, action = 'write')
-  do i = 0, degree
+  do i = 0, lmax
     do j = 0, i
-      write(file_unit, *) i, j, coeff(1, i + 1, j + 1), coeff(2, i + 1, j + 1)
+      write(file_unit, *) i, j, cilm(1, i + 1, j + 1), cilm(2, i + 1, j + 1)
     end do
   end do
   close(file_unit)
   return
 end subroutine sh_writer
-subroutine sh_reader()
+subroutine sh_reader(file_name, cilm, lmax)
   implicit none
-
+  character(*), intent(in) :: file_name
+  real(kind=8), dimension(:,:,:), intent(out) :: cilm
+  integer(kind=4), intent(in) :: lmax
+  integer(kind=4) :: i, j, file_unit, degree, order
+  open(newunit = file_unit, file = file_name, action = 'read')
+  do i = 0, lmax
+    do j = 0, i
+      read(file_unit, *) degree, order, cilm(1, i + 1, j + 1), cilm(2, i + 1, j + 1)
+      cilm(1, j + 1, i + 1) = cilm(1, i + 1, j + 1)
+      cilm(2, j + 1, i + 1) = cilm(2, i + 1, j + 1)
+    end do
+  end do
+  return
 end subroutine sh_reader
 function double_to_string(value, frmt) result(output_string)
   implicit none

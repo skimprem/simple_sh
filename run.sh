@@ -1,7 +1,22 @@
 #!/bin/bash
 
+ingrid=grid.in
+outgrid=grid.out
+outcoeff=coeff.out
+incoeff=$outcoeff
+degree=720
+step=0.25
+method=int
+
 ./build/sh_expand \
-  -in ../gao2018/input_data/GAOP2018_15m.xyz \
-  -out exp_dh.out \
-  -deg 30 \
-  -mode int
+  -in $ingrid\
+  -out $outcoeff \
+  -deg $degree \
+  -mode $method
+
+./build/sh_makegrid \
+  -in $incoeff \
+  -out $outgrid \
+  -deg $degree \
+  -mode $method \
+  -step $step
