@@ -6,14 +6,19 @@ install = ~/bin
 shtools = /usr/local
 params = -fbackslash -fdec-math
 
+all: sh_makegrid sh_expand
+
 sh_makegrid: mkdir subroutines.o sh_makegrid.o
 	$(comp) -o $(build)/sh_makegrid $(params) $(build)/sh_makegrid.o $(build)/subroutines.o -L$(shtools)/lib -lSHTOOLS -lfftw3
 
-sh_expand: mkdir subroutines.o sh_expand.o
-	$(comp) -o $(build)/sh_expand $(params) $(build)/sh_expand.o $(build)/subroutines.o -L$(shtools)/lib -lSHTOOLS -lfftw3
+sh_expand: mkdir subroutines.o sh_expand_ls.o sh_expand.o
+	$(comp) -o $(build)/sh_expand $(params) $(build)/sh_expand_ls.o $(build)/sh_expand.o $(build)/subroutines.o -L$(shtools)/lib -lSHTOOLS -lfftw3
 
 sh_expand.o:
 	$(comp) -o $(build)/sh_expand.o -c $(src)/sh_expand.f08 -std=$(std) $(params) -I$(shtools)/include -I$(build) -J$(build)
+
+sh_expand_ls.o:
+	$(comp) -o $(build)/sh_expand_ls.o -c $(src)/sh_expand_ls.f08 $(params) -I$(shtools)/include -I$(build) -J$(build)
 
 sh_makegrid.o:
 	$(comp) -o $(build)/sh_makegrid.o -c $(src)/sh_makegrid.f08 -std=$(std) $(params) -I$(shtools)/include -I$(build) -J$(build)

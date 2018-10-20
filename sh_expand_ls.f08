@@ -1,144 +1,149 @@
-  subroutine sf_ab(f,pu,nst,ab)
-   real*8 f(*),pu(*),ab(*)
-   integer*4 nst
-   integer*4 i,j,kb,kl,lst,kbl,n_2,kl_2,kt,la,ma,mb
-   real*8    a(:),cs(:),ss(:),fb(:),cb(:),sb(:),pnn(:),pln(:),v,bt,c1,c2,fi
-   logical*4 chet
-   integer*4 nom_pp,indo
-   allocatable a,cs,ss,fb,cb,sb,pnn,pln
-   n_2 = nst/2
-   v = dsqrt(3.d0)
-   call puch(pu,kb,kl,0)
-   kbl = kb*kl
-   lst = (nst + 1)*(nst + 2) - nst - 1
-   la  = (nst + 1)*(nst + 2)/2
-   mst = lst + nst + 1
-   if((2*nst+1).gt.kl .or. (nst+1).gt.kb) then
-    do i = 1,mst
-     ab(i) = 9999.
-    enddo
-    return
-   endif
-   kl_2 = kl/2
+module sh_expand_ls
+contains
+subroutine sf_ab(f,pu,nst,ab)
+  !real*8 f(*),pu(*),ab(*)
+  real*8 f(:),pu(:),ab(:)
+  integer*4 nst
+  integer*4 i,j,kb,kl,lst,kbl,n_2,kl_2,kt,la,ma,mb
+  real*8    a(:),cs(:),ss(:),fb(:),cb(:),sb(:),pnn(:),pln(:),v,bt,c1,c2,fi
+  !logical*4 chet
+  !integer*4 nom_pp,indo
+  allocatable a,cs,ss,fb,cb,sb,pnn,pln
+! kb - число делений по широте
+! kl - число делений по долготе
+  n_2 = nst/2
+  v = dsqrt(3.d0)
+  call puch(pu,kb,kl,0)
+  print *, pu
+  print *, kb, kl
+  stop
+  kbl = kb*kl
+  lst = (nst + 1)*(nst + 2) - nst - 1
+  la  = (nst + 1)*(nst + 2)/2
+  mst = lst + nst + 1
+  if((2*nst+1).gt.kl .or. (nst+1).gt.kb) then
    do i = 1,mst
-    ab(i) = 0.d0
+    ab(i) = 9999.
    enddo
-   allocate(a(kbl),cs(kl),fb(kl))
-   fi = pu(6)/2.d0
-   do i = 1,kb
-    do j = 1,kl
-     fb(j) = f((i-1)*kl+j)
-    enddo
-    call dft_for(fb,kl,cs)
-    call sd_kof(cs,kl,fi,fb)
-    do j = 1,kl
-     a((i-1)*kl+j) = fb(j)
-    enddo
+   return
+  endif
+  kl_2 = kl/2
+  do i = 1,mst
+   ab(i) = 0.d0
+  enddo
+  allocate(a(kbl),cs(kl),fb(kl))
+  fi = pu(6)/2.d0
+  do i = 1,kb
+   do j = 1,kl
+    fb(j) = f((i-1)*kl+j)
    enddo
-   deallocate(cs,fb)
-   allocate(cb(kb),sb(kb),pnn(kb),pln(kb*nst+kb),cs(kb),ss(kb))
-   do i = 1,kb
-    bt = pu(1)-(i-1)*pu(3)
-    cb(i) = dcos(bt)
-    sb(i) = dsin(bt)
+   call dft_for(fb,kl,cs)
+   call sd_kof(cs,kl,fi,fb)
+   do j = 1,kl
+    a((i-1)*kl+j) = fb(j)
    enddo
-   c2 = 0.d0
-   do i = 0,nst
-    kt = nst + 1 - i
-    if(i.gt.1) v = dsqrt((2*i+1.d0)/(2.d0*i))
-    do j = 1,kb
-     call ft_nkoef1( i,kl,ma,mb )
-     cs(j) = a((j-1)*kl+ma)
-     if(mb.gt.0) ss(j) = a((j-1)*kl+mb)
-     if(i.eq.0) then
-      pnn(j) = 1.d0
+  enddo
+  deallocate(cs,fb)
+  allocate(cb(kb),sb(kb),pnn(kb),pln(kb*nst+kb),cs(kb),ss(kb))
+  do i = 1,kb
+   bt = pu(1)-(i-1)*pu(3)
+   cb(i) = dcos(bt)
+   sb(i) = dsin(bt)
+  enddo
+  c2 = 0.d0
+  do i = 0,nst
+   kt = nst + 1 - i
+   if(i.gt.1) v = dsqrt((2*i+1.d0)/(2.d0*i))
+   do j = 1,kb
+    call ft_nkoef1( i,kl,ma,mb )
+    cs(j) = a((j-1)*kl+ma)
+    if(mb.gt.0) ss(j) = a((j-1)*kl+mb)
+    if(i.eq.0) then
+     pnn(j) = 1.d0
+    else
+     pnn(j) = pnn(j)*v*cb(j)
+    endif
+    pln(indo(j,1,kb)) = pnn(j)
+   enddo
+   do j = i+1,nst
+    c1 = dsqrt((4.d0*j*j - 1.d0)/(j*j - i*i + 0.d0))
+    if(j.gt.1) then
+     c2 = (2*j+1.d0)/(2.d0*j-3.d0)*((j-1.)*(j-1.)-i*i)/(j*j-i*i+0.d0)
+     c2 = dsqrt(c2)
+    endif
+    do ij = 1,kb
+     l = indo(ij,(j-i+1),kb)
+     if(j-i.gt.1) then
+      pln(l) = c1*pln(indo(ij,(j-i),kb))*sb(ij) - c2*pln(indo(ij,(j-i-1),kb))
      else
-      pnn(j) = pnn(j)*v*cb(j)
+      pln(l) = c1*pln(indo(ij,(j-i),kb))*sb(ij)
      endif
-     pln(indo(j,1,kb)) = pnn(j)
-    enddo
-    do j = i+1,nst
-     c1 = dsqrt((4.d0*j*j - 1.d0)/(j*j - i*i + 0.d0))
-     if(j.gt.1) then
-      c2 = (2*j+1.d0)/(2.d0*j-3.d0)*((j-1.)*(j-1.)-i*i)/(j*j-i*i+0.d0)
-      c2 = dsqrt(c2)
-     endif
-     do ij = 1,kb
-      l = indo(ij,(j-i+1),kb)
-      if(j-i.gt.1) then
-       pln(l) = c1*pln(indo(ij,(j-i),kb))*sb(ij) - c2*pln(indo(ij,(j-i-1),kb))
-      else
-       pln(l) = c1*pln(indo(ij,(j-i),kb))*sb(ij)
-      endif
-     enddo
-    enddo
-    if(i.eq.0 .or. (i.eq.kl_2 .and. chet(kl))) then
-     call o_sdv1(pln,cs,kb,kt,iErrO)
-     do j = i,kt - 1
-      ab(nom_pp(j,i,nst)) = cs(j-i+1)
-     enddo
-    else
-     call o_sdv2(pln,cs,ss,kb,kt,iErrO)
-     do j = i,nst
-      l = nom_pp(j,i,nst)
-      ab(l) = cs(j-i+1)
-      ab(l+la) = ss(j-i+1)
-     enddo
-    endif
-   enddo
-   deallocate(a,cs,ss,cb,sb,pnn,pln)
-   return
-  end
-
-  subroutine psvd(u,v,w,n,k,a,ierr)
-   real*8    u(*),w(*),v(*),a(*)
-   integer*4 n,k,ierr
-   real*8    wmax,eps
-   integer*4 i,j,ipt
-   integer*1 i0,i1
-   integer indo
-   i0 = 0
-   i1 = 1
-   ierr = 0
-   eps  = k*1.e-12
-   iPt   = 0
-   wmax = 0.d0
-   do i = 1,k
-    if( w(i).gt.wmax ) wmax = w(i)
-   enddo
-   wmax = wmax * eps
-   do i = 1,k
-    if( w(i).gt.wmax .and. wmax.gt.0 ) then
-     w(i) = 1.d0/w(i)
-    else
-     if(iPt.eq.0) iPt  = i
-     w(i) = 0.d0
-    endif
-   enddo
-   do i = 1,k
-    do j = 1,k
-     v(indo(i,j,k)) = v(indo(i,j,k))*w(j)
     enddo
    enddo
-   call um2( v,i0,i0,u,i1,i0,a,i0,i0,k,k,n,ierr )
-   if( iPt.gt.0 ) ierr = -iPt
-   return
-  end
-
-  integer function indo( i,j,N )
-   integer i,j,N
-   indo = ( j - 1 ) * N + i
-   return
-  end
-  function indx(i,j)
-   if(i-j) 1,2,2  
+   if(i.eq.0 .or. (i.eq.kl_2 .and. chet(kl))) then
+    call o_sdv1(pln,cs,kb,kt,iErrO)
+    do j = i,kt - 1
+     ab(nom_pp(j,i,nst)) = cs(j-i+1)
+    enddo
+   else
+    call o_sdv2(pln,cs,ss,kb,kt,iErrO)
+    do j = i,nst
+     l = nom_pp(j,i,nst)
+     ab(l) = cs(j-i+1)
+     ab(l+la) = ss(j-i+1)
+    enddo
+   endif
+  enddo
+  deallocate(a,cs,ss,cb,sb,pnn,pln)
+  return
+end subroutine sf_ab
+subroutine psvd(u,v,w,n,k,a,ierr)
+  real*8    u(*),w(*),v(*),a(*)
+  integer*4 n,k,ierr
+  real*8    wmax,eps
+  integer*4 i,j,ipt
+  integer*1 i0,i1
+  !integer indo
+  i0 = 0
+  i1 = 1
+  ierr = 0
+  eps  = k*1.e-12
+  iPt   = 0
+  wmax = 0.d0
+  do i = 1,k
+   if( w(i).gt.wmax ) wmax = w(i)
+  enddo
+  wmax = wmax * eps
+  do i = 1,k
+   if( w(i).gt.wmax .and. wmax.gt.0 ) then
+    w(i) = 1.d0/w(i)
+   else
+    if(iPt.eq.0) iPt  = i
+    w(i) = 0.d0
+   endif
+  enddo
+  do i = 1,k
+   do j = 1,k
+    v(indo(i,j,k)) = v(indo(i,j,k))*w(j)
+   enddo
+  enddo
+  call um2( v,i0,i0,u,i1,i0,a,i0,i0,k,k,n,ierr )
+  if( iPt.gt.0 ) ierr = -iPt
+  return
+end subroutine psvd
+integer function indo( i,j,N )
+  integer i,j,N
+  indo = ( j - 1 ) * N + i
+  return
+end function indo
+function indx(i,j)
+  if(i-j) 1,2,2  
 1  indx=j*(j-1)/2+i  
    return            
 2 indx=i*(i-1)/2+j  
   return
-  end
-
-  subroutine um2(A,itA,isA,B,itB,isB,C,izC,isC,N,K,M,iErrO)
+end function indx
+subroutine um2(A,itA,isA,B,itB,isB,C,izC,isC,N,K,M,iErrO)
 	real*8    A(1),B(1),C(1)
 	integer*1 itA,itB,isA,isB,isC,izC
 	integer*4 N,K,M
@@ -250,8 +255,8 @@
 205   iErrO=205
    if(izC.ne.0) deallocate(vM)
    return
-   end
-   subroutine ft_nkoef1( n,k,ma,mb )
+end subroutine um2
+subroutine ft_nkoef1( n,k,ma,mb )
    integer*4 n,k,ma,mb
    mn = k/2
    if( n.gt.mn ) then
@@ -263,17 +268,17 @@
    mb = -1
    if( n.gt.0 .and. n+mn+1.le.k ) mb = n + mn + 1
    return
-  end
+end subroutine ft_nkoef1
 
-  subroutine cos_sin_nx( cnx,snx,cx,sx )
+subroutine cos_sin_nx( cnx,snx,cx,sx )
    real*8    cnx,snx,cx,sx,t
    t   = cnx
    cnx = cnx*cx - snx*sx
    snx = snx*cx + t  *sx
    return
-  end
+end subroutine cos_sin_nx
 
-  subroutine sd_kof(a,k,fi,b)
+subroutine sd_kof(a,k,fi,b)
    real*8 a(*),fi,b(*),cf,sf,ckf,skf
    integer*4 k,i,n,ma,mb
    n = k/2
@@ -299,9 +304,9 @@
     call cos_sin_nx( ckf,skf,cf,sf )
    enddo
    return
-  end
+end subroutine sd_kof
 
-  subroutine o_sdv2(A,B,C,N,K,iErrO)
+subroutine o_sdv2(A,B,C,N,K,iErrO)
    real*8    A(*),B(*),C(*)
    integer*4 N,K
    real*8    U(:),W(:),V(:)
@@ -322,9 +327,9 @@
    call um2( A,i0,i0,B,i0,i0,B,i1,i0,K,N,1,iErrO)
    call um2( A,i0,i0,C,i0,i0,C,i1,i0,K,N,1,iErrO)
    return
-  end
+end subroutine o_sdv2
 
-  subroutine dft_for(f,n,a)
+subroutine dft_for(f,n,a)
    real*8    f(*),a(*)
    integer*4 n,np
    real*8 pi/3.1415926535897932384626433832795d0/
@@ -359,15 +364,15 @@
     endif
    enddo
    return
-  end
+end subroutine dft_for
 
-  subroutine svd_i( A,M,N,U,iU,V,iV,W,iErrO )
+subroutine svd_i( A,M,N,U,iU,V,iV,W,iErrO )
    real*8  A(*),U(*),V(*),W(*)
    integer M,N,iU,iV,iErrO
    real*8  vR(:),S,C,F,G,H,X,Y,Z,Anr,Sc
    real*8  eps
    integer i,j,l,k,i1,k1,l1,ii,kk,its,MN,il,jl
-   integer indo
+   !integer indo
    allocatable vR
    allocate( vR(N) )
    iErrO = 0
@@ -637,9 +642,9 @@
    enddo
    deallocate( vR )
    return
-  end
+end subroutine svd_i
 
-  subroutine o_sdv1(A,B,N,K,iErrO)
+subroutine o_sdv1(A,B,N,K,iErrO)
    real*8    A(*),B(*)
    integer*4 N,K
    integer*1 i0,i1
@@ -659,11 +664,11 @@
    if( iErrO.gt.0 ) return
    call um2( a,i0,i0,B,i0,i0,B,i1,i0,K,N,1,iErrO)
    return
-  end
+end subroutine o_sdv1
 
-  subroutine puch(Pu,kB,kL,iPr)
+subroutine puch(Pu,kB,kL,iPr)
    real*8 Pu(*),vPu(6)
-   real*8 drad
+   !real*8 drad
    integer*4 kB,kL,iPr
    do i = 1,6
     if( iPr.eq.0 ) then
@@ -683,8 +688,8 @@
     enddo
    endif
    return
-  end
- integer*4 function nom_pp(i,j,Nraz)
+end subroutine puch
+integer*4 function nom_pp(i,j,Nraz)
   integer*4 i,j,Nraz
   if(i.ge.j) then
     nom_pp = (2*Nraz-j+3)*j/2+i-j+1
@@ -692,8 +697,8 @@
     nom_pp = (2*Nraz-i+3)*i/2+j-i+1
   endif
   return
- end
- real*8 function drad(x)
+end function nom_pp
+real*8 function drad(x)
   real*8 x,y,pi
   pi=3.1415926535897932384626433832795d0
   if(x.ne.0) then
@@ -707,13 +712,12 @@
   drad=0.d0
   end if
   return
-  end
-  logical*4 function chet(k)
+end function drad
+logical*4 function chet(k)
    integer k,n
    n=k/2
    chet=.false.
    if(n*2.eq.k) chet=.true.
    return
-  end
-
-
+end function chet
+end module sh_expand_ls

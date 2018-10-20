@@ -1,11 +1,13 @@
 program sh_expand
   use SHTOOLS
   use subroutines
+  use sh_expand_ls
   implicit none
   real(kind=8), dimension(:,:), allocatable :: griddh
   real(kind=8), dimension(:,:,:), allocatable :: cilm
   real(kind=8), dimension(:), allocatable :: grid, coeff
   real(kind=8) :: lat_step
+  real(kind=8), dimension(:) :: grid_passport(6)
   integer(kind=4) :: i, j, k, n, lmax, lmax_calc, exit_status, stdout
   character(len=:), allocatable :: grid_file, sh_file, sh_method
   character(len=500) :: arg
@@ -69,7 +71,7 @@ program sh_expand
       stop
     end if
   case('int')
-    write(stdout, '(1x, a)', advance = 'no') 'expandint() ... '
+    write(stdout, '(1x, a)', advance = 'no') 'shetim() ... '
     !call expandint(griddh, n, cilm, lmax_calc)
     allocate(grid(n * n * 2))
     allocate(coeff((lmax_calc + 1) * (lmax_calc + 2) - lmax_calc - 1))
@@ -100,6 +102,43 @@ program sh_expand
       end do
     end do
     write(stdout, '(a)') ' done!'
+  case('ls')
+    write(stdout, '(1x, a)', advance = 'no') 'sf_ab() ... '
+    allocate(grid(n * n * 2))
+    allocate(coeff((lmax_calc + 1) * (lmax_calc + 2) - lmax_calc - 1))
+    allocate(cilm(2, lmax_calc + 1, lmax_calc + 1))
+    grid_passport(1) = 90._8
+    grid_passport(2) = -90._8
+    grid_passport(3) = 180._8 / real(n, kind=8)
+    grid_passport(4) = 0._8
+    grid_passport(5) = 360._8
+    grid_passport(6) = grid_passport(3)
+    k = 0
+    do i = 1, n
+      do j = 1, n * 2
+        k = k + 1
+        grid(k) = griddh(i, j)
+      end do
+    end do
+    call sf_ab(grid, grid_passport, lmax_calc, coeff)
+    k = 1
+    cilm = 0._8
+    cilm(1, 1, 1) = coeff(k)
+    do i = 1, lmax_calc 
+      k = k + 1
+      cilm(1, i + 1, 1) = coeff(k)
+      cilm(1, 1, i + 1) = coeff(k)
+      do j = 1, i
+        k = k + 1
+        cilm(1, i + 1, j + 1) = coeff(k)
+        cilm(1, j + 1, i + 1) = coeff(k)
+        k = k + 1
+        cilm(2, i + 1, j + 1) = coeff(k)
+        cilm(2, j + 1, i + 1) = coeff(k)
+      end do
+    end do
+    write(stdout, '(a)') ' done!'
+
   end select
   call sh_writer(sh_file, cilm, lmax_calc)
 end program sh_expand

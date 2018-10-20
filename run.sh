@@ -6,7 +6,8 @@ outcoeff=coeff.out
 incoeff=$outcoeff
 degree=720
 step=0.25
-method=int
+#method=int
+method=ls
 
 ./build/sh_expand \
   -in $ingrid\
