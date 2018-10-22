@@ -2,21 +2,30 @@ module sh_expand_ls
 contains
 subroutine sf_ab(f,pu,nst,ab)
   !real*8 f(*),pu(*),ab(*)
-  real*8 f(:),pu(:),ab(:)
-  integer*4 nst
-  integer*4 i,j,kb,kl,lst,kbl,n_2,kl_2,kt,la,ma,mb
-  real*8    a(:),cs(:),ss(:),fb(:),cb(:),sb(:),pnn(:),pln(:),v,bt,c1,c2,fi
+  real(kind=8), dimension(:), intent(in) ::  f(:), pu(:)
+  real(kind=8), dimension(:), intent(out) :: ab(:)
+  integer(kind=4), intent(in) :: nst
+  integer(kind=4) :: i,j,kb,kl,lst,kbl,n_2,kl_2,kt,la,ma,mb
+  real(kind=8) :: a(:),cs(:),ss(:),fb(:),cb(:),sb(:),pnn(:),pln(:),v,bt,c1,c2,fi
   !logical*4 chet
   !integer*4 nom_pp,indo
   allocatable a,cs,ss,fb,cb,sb,pnn,pln
+! f() - функция для разложения (сетка)
+! запись в ленточной форме от сев.-зап. угла
+! по широтным поясам
+! pu(1) - северная граница
+! pu(2) - Южная граница
+! pu(3) - шаг по широте
+! pu(4) - западная граница
+! pu(5) - восточная граница
+! pu(6) - шаг по долготе
+! nst - степень разложения
+! ab() - упакованная матрица коэффициентов
 ! kb - число делений по широте
 ! kl - число делений по долготе
   n_2 = nst/2
   v = dsqrt(3.d0)
   call puch(pu,kb,kl,0)
-  print *, pu
-  print *, kb, kl
-  stop
   kbl = kb*kl
   lst = (nst + 1)*(nst + 2) - nst - 1
   la  = (nst + 1)*(nst + 2)/2
@@ -678,10 +687,11 @@ subroutine puch(Pu,kB,kL,iPr)
     endif
    enddo
 ! изменено Сермягиным 29.09.2009
-   kB = ( vPu(1)-vPu(2) ) / vPu(3) + 0.5
-   kL = ( vPu(5)-vPu(4) ) / vPu(6) + 0.5
-!   kB = ( vPu(1)-vPu(2) ) / vPu(3) + 1.5
-!   kL = ( vPu(5)-vPu(4) ) / vPu(6) + 1.5
+   !kB = ( vPu(1)-vPu(2) ) / vPu(3) + 0.5
+   !kL = ( vPu(5)-vPu(4) ) / vPu(6) + 0.5
+! было у Майорова
+   kB = ( vPu(1)-vPu(2) ) / vPu(3) + 1.5
+   kL = ( vPu(5)-vPu(4) ) / vPu(6) + 1.5
    if( iPr.eq.1 ) then
     do i = 1,6
      Pu(i) = vPu(i)
