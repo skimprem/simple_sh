@@ -9,7 +9,7 @@ program sh_expand
   real(kind=8) :: lat_step
   real(kind=8), dimension(:) :: grid_passport(6)
   integer(kind=4) :: i, j, k, n, lmax, lmax_calc, exit_status, stdout
-  integer(kind=16) :: mem_size, ii, jj
+  integer(kind=8) :: mem_size
   character(len=:), allocatable :: grid_file, sh_file, sh_method
   character(len=500) :: arg
   stdout = 6
@@ -170,17 +170,16 @@ program sh_expand
     write(stdout, *) 'points: ', integer_to_string(n)
     allocate(cilm(2, lmax_calc + 1, lmax_calc + 1))
     write(stdout, '(1x, a)', advance = 'no') 'shexpandlsq() ...'
-    ii = int(n, kind = 16)
-    jj = int((lmax_calc + 1) ** 2, kind = 16)
-    print *, 'n = ', ii, '(lmax + 1) ^ 2 = ', jj
-    print *, 'n * (lmax + 1) ^ 2 = ', ii * jj
-    mem_size = ii * jj 
-    !print *, mem_info_int(mem_size, 'B')
-    deallocate(grid)
-    allocate(grid(mem_size))
-    allocate(griddh(int(n, kind = 8), (int(lmax_calc, kind = 8) + 1) ** 2), stat = i)
-    print *, i
-    stop
+    print *, 'n =', n
+    print *, '(lmax + 1) ** 2 =', (lmax_calc + 1) ** 2
+    mem_size = int(n, kind = 8) * (int(lmax_calc, kind =8) + 1) ** 2 
+    print *, 'elements number =', mem_size
+    print *, mem_info_int(int(n, kind = 8) * (int(lmax_calc, kind = 8) + 1) ** 2 * 8 * kind(grid), 'B')
+    !deallocate(grid)
+    !allocate(grid(mem_size))
+    !allocate(griddh(int(n, kind = 8), (int(lmax_calc, kind = 8) + 1) ** 2), stat = i)
+    !print *, i
+    !stop
     call shexpandlsq(&
       cilm,&
       d = grid,&

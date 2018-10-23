@@ -1,6 +1,6 @@
 #!/bin/bash
 
-ingrid=grid.in
+ingrid=grid_30m.in
 outgrid=grid.out
 outcoeff=coeff
 incoeff=$outcoeff
