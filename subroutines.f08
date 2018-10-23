@@ -1,35 +1,169 @@
 module subroutines
 contains
-subroutine grid_reader(file_name, grid, n)
+subroutine grid_reader(file_name, mode, grid_reg_2d, grid_reg_1d, grid_irr_1d, n_lat, n_points, lat, lon)
   implicit none
-  character(*), intent(in) :: file_name
-  real(kind=8), dimension(:,:), allocatable, intent(out) :: grid 
-  integer(kind=4), intent(out) :: n
-  real(kind=4) :: lat, lon
-  integer(kind=4) :: i, j, file_unit, io_status, blocks, n2 
-  open(newunit = file_unit, file = file_name, action = 'read', status = 'old')
+  character(*), intent(in) :: file_name, mode
+  real(kind=8), dimension(:,:), allocatable, intent(out), optional :: grid_reg_2d
+  real(kind=8), dimension(:), allocatable, intent(out), optional :: grid_reg_1d, grid_irr_1d,lat,lon
+  real(kind=8) :: lat_i, lon_i
+  integer(kind=4), intent(out), optional :: n_lat, n_points
+  integer(kind=4) :: stdout, i, j, k, file_unit, io_status, enter_status, n_samples, n_lon 
+  character(len=:), allocatable :: variable_name
   io_status = 0
-  blocks = 0
-  do
-    read(file_unit, *, iostat = io_status)
-    if(io_status == 0) then
-      blocks = blocks + 1
-      cycle
-    else
-      exit
+  enter_status = 0
+  stdout = 6
+  open(newunit = file_unit, file = file_name, action = 'read', status = 'old')
+  select case(mode)
+  case('reg_1d')
+    if(present(grid_reg_2d) .eqv. .true.) then
+      enter_status = 1
+      variable_name = 'grid_reg_2d'
+    else if(present(grid_irr_1d) .eqv. .true.) then
+      enter_status = 1
+      variable_name = 'grid_irr_1d'
+    else if(present(n_points) .eqv. .true.) then
+      enter_status = 1
+      variable_name = 'n_points'
+    else if(present(grid_reg_1d) .eqv. .false.) then
+      enter_status = 2
+      variable_name = 'grid_reg_1d'
+    else if(present(n_lat) .eqv. .false.) then
+      enter_status = 2
+      variable_name = 'n_lat'
     end if
-  end do
-  rewind(file_unit)
-  n = int(dsqrt(real(blocks, kind = 8) / 2), kind = 4)
-  n2 = n * 2
-  allocate(grid(n, n2))
-  do i = 1, n
-    do j = 1, n2
-      read(file_unit, *) lat, lon, grid(i, j)
-    end do
-  end do
-  close(file_unit)
-  return
+    if(enter_status == 0) then
+      n_samples = 0
+      do
+        read(file_unit, *, iostat = io_status)
+        if(io_status == 0) then
+          n_samples = n_samples + 1
+          cycle
+        else
+          exit
+        end if
+      end do
+      rewind(file_unit)
+      n_lat = int(dsqrt(real(n_samples, kind = 8) / 2), kind = 4)
+      allocate(grid_reg_1d(n_samples))
+      if((present(lat) .eqv. .true.) .and. (present(lon) .eqv. .true.)) then
+        do i = 1, n_samples
+          read(file_unit, *) lat_i, lon_i, grid_reg_1d(i)
+        end do
+      else
+        n_lon = n_lat * 2
+        allocate(lat(n_lat), lon(n_lon))
+        k = 0
+        do i = 1, n_lat
+          do j = 1, n_lon
+            k = k + 1
+            read(file_unit, *) lat(i), lon(j), grid_reg_1d(k)
+          end do
+        end do
+      close(file_unit)
+      end if
+    end if
+  case('reg_2d')
+    if(present(grid_reg_1d) .eqv. .true.) then
+      enter_status = 1
+      variable_name = 'grid_reg_1d'
+    else if(present(grid_irr_1d) .eqv. .true.) then
+      enter_status = 1
+      variable_name = 'grid_irr_1d'
+    else if(present(n_points) .eqv. .true.) then
+      enter_status = 1
+      variable_name = 'n_points'
+    else if(present(grid_reg_2d) .eqv. .false.) then
+      enter_status = 2
+      variable_name = 'grid_reg_2d'
+    else if(present(n_lat) .eqv. .false.) then
+      enter_status = 2
+      variable_name = 'n_lat'
+    end if
+    if(enter_status == 0) then
+      n_samples = 0
+      do
+        read(file_unit, *, iostat = io_status)
+        if(io_status == 0) then
+          n_samples = n_samples + 1
+          cycle
+        else
+          exit
+        end if
+      end do
+      rewind(file_unit)
+      n_lat = int(dsqrt(real(n_samples, kind = 8) / 2), kind = 4)
+      n_lon = n_lat * 2
+      allocate(grid_reg_2d(n_lat, n_lon))
+      if((present(lat) .eqv. .true.) .and. (present(lon) .eqv. .true.)) then
+        allocate(lat(n_lat), lon(n_lon))
+        do i = 1, n_lat
+          do j = 1, n_lon
+            read(file_unit, *) lat(i), lon(j), grid_reg_2d(i, j)
+          end do
+        end do
+      else
+        do i = 1, n_lat
+          do j = 1, n_lon
+            read(file_unit, *) lat_i, lon_i, grid_reg_2d(i, j)
+          end do
+        end do
+      end if
+      close(file_unit)
+    end if
+  case('irr_1d')
+    if(present(grid_reg_1d) .eqv. .true.) then
+      enter_status = 1
+      variable_name = 'grid_reg_1d'
+    else if(present(grid_reg_2d) .eqv. .true.) then
+      enter_status = 1
+      variable_name = 'grid_reg_2d'
+    else if(present(n_lat) .eqv. .true.) then
+      enter_status = 1
+      variable_name = 'n_lat'
+    else if(present(grid_irr_1d) .eqv. .false.) then
+      enter_status = 2
+      variable_name = 'grid_irr_1d'
+    else if(present(n_points) .eqv. .false.) then
+      enter_status = 2
+      variable_name = 'n_points'
+    else if((present(lat) .eqv. .false.) .or. (present(lon) .eqv. .false.)) then
+      enter_status = 2
+      variable_name = 'lat or lon'
+    end if
+    if(enter_status == 0) then
+      n_samples = 0
+      do
+        read(file_unit, *, iostat = io_status)
+        if(io_status == 0) then
+          n_samples = n_samples + 1
+          cycle
+        else
+          exit
+        end if
+      end do
+      rewind(file_unit)
+      n_points = n_samples
+      allocate(lat(n_points), lon(n_points), grid_irr_1d(n_points))
+      do i = 1, n_points
+        read(file_unit, *) lat(i), lon(i), grid_irr_1d(i)
+      end do
+      return
+    end if
+  end select
+  select case(enter_status)
+  case(0)
+    return
+  case(1)
+    write(stdout, *)
+    write(stdout, *) 'error: output variable "', variable_name,&
+    '" do not match mode ', '"', mode,'"'
+    stop
+  case(2)
+    write(stdout, *)
+    write(stdout, *) 'error: there are no necessary output variable',&
+    '"', variable_name, '"', 'in mode ', '"', mode, '"'
+    stop
+  end select
 end subroutine grid_reader
 subroutine grid_writer(file_name, grid, interval, nlat, nlon, north, west)
   implicit none
@@ -412,5 +546,49 @@ integer(4) function indx_2(i,j)
         indx_2=i*(i-1)+2*j-i
     end if
 end function indx_2
+function mem_info_int(value, units_mode)
+  implicit none
+  integer(kind=8), intent(in) :: value
+  character(len=:), allocatable :: mem_info_int
+  character(*), intent(in) :: units_mode
+  character(len=:), allocatable :: units
+  integer(kind=4) :: i
+  real(kind=8) :: value_double 
+  i = 1
+  select case(units_mode)
+  case('b')
+    value_double = real(value, 8)
+    units = 'b'
+  case('B')
+    value_double = real(value, 8) / 8._8
+    units = 'B'
+  end select
+  do
+    if(value_double < 1000) then
+      select case(i)
+      case(2)
+        units = ' k'//units
+      case(3)
+        units = ' M'//units
+      case(4)
+        units = ' G'//units
+      case(5)
+        units = ' T'//units
+      case(6)
+        units = ' P'//units
+      case(7)
+        units = ' E'//units
+      case(8)
+        units = ' Z'//units
+      case(9)
+        units = ' Y'//units
+      end select
+      mem_info_int = double_to_string(value_double, '(f100.1)')//units
+      return
+    end if
+    value_double = value_double / 1000._8
+    i = i + 1
+  end do
+end function mem_info_int
 
 end module subroutines
