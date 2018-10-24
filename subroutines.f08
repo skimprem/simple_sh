@@ -1,19 +1,59 @@
 module subroutines
 contains
-subroutine grid_reader(file_name, mode, grid_reg_2d, grid_reg_1d, grid_irr_1d, n_lat, n_points, lat, lon)
+subroutine grid_reader(file_name, mode, grid_reg_2d, grid_reg_1d, grid_irr_1d, grid_glq_2d, n_lat, n_points, lat, lon, lmax)
   implicit none
   character(*), intent(in) :: file_name, mode
   real(kind=8), dimension(:,:), allocatable, intent(out), optional :: grid_reg_2d
   real(kind=8), dimension(:), allocatable, intent(out), optional :: grid_reg_1d, grid_irr_1d,lat,lon
   real(kind=8) :: lat_i, lon_i
-  integer(kind=4), intent(out), optional :: n_lat, n_points
-  integer(kind=4) :: stdout, i, j, k, file_unit, io_status, enter_status, n_samples, n_lon 
+  integer(kind=4), intent(out), optional :: n_lat, n_points, lmax
+  integer(kind=4) :: stdout, i, j, k, file_unit, io_status, enter_status, n_lines, n_lon 
   character(len=:), allocatable :: variable_name
   io_status = 0
   enter_status = 0
   stdout = 6
   open(newunit = file_unit, file = file_name, action = 'read', status = 'old')
   select case(mode)
+  case('glq_2d')
+    if(present(grid_reg_1d) .eqv. .true.) then
+      enter_status = 1
+      variable_name = 'grid_reg_1d'
+    if(present(grid_reg_2d) .eqv. .true.) then
+      enter_status = 1
+      variable_name = 'grid_reg_2d'
+    else if(present(grid_irr_1d) .eqv. .true.) then
+      enter_status = 1
+      variable_name = 'grid_irr_1d'
+    else if(present(n_lat) .eqv. .true.) then
+      enter_status = 1
+      variable_name = 'n_lat'
+    else if(present(n_points) .eqv. .true.) then
+      enter_status = 1
+      variable_name = 'n_points'
+    else if(present(grid_glq_2d) .eqv. .false.) then
+      enter_status = 2
+      variable_name = 'grid_glq_2d'
+    else if(present(grid_reg_1d) .eqv. .false.) then
+      enter_status = 2
+      variable_name = 'grid_reg_1d'
+    else if(present(n_lat) .eqv. .false.) then
+      enter_status = 2
+      variable_name = 'n_lat'
+    end if
+    if(enter_status == 0) then
+      n_lines = 0
+      do
+        read(file_unit, *, iostat = io_status)
+        if(io_status == 0) then
+          n_lines = n_lines + 1
+          cycle
+        else
+          exit
+        end if
+      end do
+      rewind(file_unit)
+      lmax = 
+    end if
   case('reg_1d')
     if(present(grid_reg_2d) .eqv. .true.) then
       enter_status = 1
@@ -32,21 +72,21 @@ subroutine grid_reader(file_name, mode, grid_reg_2d, grid_reg_1d, grid_irr_1d, n
       variable_name = 'n_lat'
     end if
     if(enter_status == 0) then
-      n_samples = 0
+      n_lines = 0
       do
         read(file_unit, *, iostat = io_status)
         if(io_status == 0) then
-          n_samples = n_samples + 1
+          n_lines = n_lines + 1
           cycle
         else
           exit
         end if
       end do
       rewind(file_unit)
-      n_lat = int(dsqrt(real(n_samples, kind = 8) / 2), kind = 4)
-      allocate(grid_reg_1d(n_samples))
+      n_lat = int(dsqrt(real(n_lines, kind = 8) / 2), kind = 4)
+      allocate(grid_reg_1d(n_lines))
       if((present(lat) .eqv. .true.) .and. (present(lon) .eqv. .true.)) then
-        do i = 1, n_samples
+        do i = 1, n_lines
           read(file_unit, *) lat_i, lon_i, grid_reg_1d(i)
         end do
       else
@@ -80,18 +120,18 @@ subroutine grid_reader(file_name, mode, grid_reg_2d, grid_reg_1d, grid_irr_1d, n
       variable_name = 'n_lat'
     end if
     if(enter_status == 0) then
-      n_samples = 0
+      n_lines = 0
       do
         read(file_unit, *, iostat = io_status)
         if(io_status == 0) then
-          n_samples = n_samples + 1
+          n_lines = n_lines + 1
           cycle
         else
           exit
         end if
       end do
       rewind(file_unit)
-      n_lat = int(dsqrt(real(n_samples, kind = 8) / 2), kind = 4)
+      n_lat = int(dsqrt(real(n_lines, kind = 8) / 2), kind = 4)
       n_lon = n_lat * 2
       allocate(grid_reg_2d(n_lat, n_lon))
       if((present(lat) .eqv. .true.) .and. (present(lon) .eqv. .true.)) then
@@ -131,18 +171,18 @@ subroutine grid_reader(file_name, mode, grid_reg_2d, grid_reg_1d, grid_irr_1d, n
       variable_name = 'lat or lon'
     end if
     if(enter_status == 0) then
-      n_samples = 0
+      n_lines = 0
       do
         read(file_unit, *, iostat = io_status)
         if(io_status == 0) then
-          n_samples = n_samples + 1
+          n_lines = n_lines + 1
           cycle
         else
           exit
         end if
       end do
       rewind(file_unit)
-      n_points = n_samples
+      n_points = n_lines
       allocate(lat(n_points), lon(n_points), grid_irr_1d(n_points))
       do i = 1, n_points
         read(file_unit, *) lat(i), lon(i), grid_irr_1d(i)
