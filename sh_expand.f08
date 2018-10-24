@@ -170,16 +170,6 @@ program sh_expand
     write(stdout, *) 'points: ', integer_to_string(n)
     allocate(cilm(2, lmax_calc + 1, lmax_calc + 1))
     write(stdout, '(1x, a)', advance = 'no') 'shexpandlsq() ...'
-    print *, 'n =', n
-    print *, '(lmax + 1) ** 2 =', (lmax_calc + 1) ** 2
-    mem_size = int(n, kind = 8) * (int(lmax_calc, kind =8) + 1) ** 2 
-    print *, 'elements number =', mem_size
-    print *, mem_info_int(int(n, kind = 8) * (int(lmax_calc, kind = 8) + 1) ** 2 * 8 * kind(grid), 'B')
-    !deallocate(grid)
-    !allocate(grid(mem_size))
-    !allocate(griddh(int(n, kind = 8), (int(lmax_calc, kind = 8) + 1) ** 2), stat = i)
-    !print *, i
-    !stop
     call shexpandlsq(&
       cilm,&
       d = grid,&
@@ -188,7 +178,16 @@ program sh_expand
       nmax = n,&
       lmax = lmax_calc,&
       exitstatus = exit_status)
-    print *, exit_status
+    select case(exit_status)
+    case(0)
+      write(stdout, '(1x, a)') ' done!'
+      continue
+    case(1)
+    case(2)
+    case(3)
+      mem_size = int(n, kind = 8) * (int(lmax_calc, kind =8) + 1) ** 2 
+      print *, mem_info_int(mem_size * 8 * kind(grid), 'B'), ' of free memory is required!'
+    end select
   end select
   call sh_writer(sh_file, cilm, lmax_calc)
 end program sh_expand
