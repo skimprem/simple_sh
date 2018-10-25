@@ -3,9 +3,9 @@ program sh_expand
   use subroutines
   use sh_expand_ls
   implicit none
-  real(kind=8), dimension(:,:), allocatable :: grid_2d
+  real(kind=8), dimension(:,:), allocatable :: grid_2d, plx
   real(kind=8), dimension(:,:,:), allocatable :: cilm
-  real(kind=8), dimension(:), allocatable :: grid_1d, coeff, lat, lon
+  real(kind=8), dimension(:), allocatable :: grid_1d, coeff, lat, lon, w, zero
   real(kind=8) :: lat_step
   real(kind=8), dimension(:) :: grid_passport(6)
   integer(kind=4) :: i, j, k, n, lmax, lmax_calc, exit_status, stdout
@@ -176,25 +176,35 @@ program sh_expand
     end select
   case('glq')
     write(stdout, '(1x, a)', advance = 'no') 'reading grid ...'
-    !call grid_reader(&
-      !file_name = grid_file,&
-      !mode = 'glq_2d',&
-      !grid_glq_2d = grid_2d,&
-      !lmax = lmax)
+    call grid_reader(&
+      file_name = grid_file,&
+      mode = 'glq_2d',&
+      grid_glq_2d = grid_2d,&
+      lmax = lmax)
     write(stdout, '(1x, a)') ' done!'
-    write(stdout, *) 'GLQ samples:' 
-    !call 
-    !call shexpandglq(&
-      !cilm = ,&
-      !lmax = ,&
-      !gridglq = ,&
-      !w = ,&
-      !plx = ,&
-      !zero = ,&
-      !norm = 1,&
-      !csphase = 1,&
-      !lmax_calc = lmax_calc,&
-      !exitstatus = exit_status)
+    write(stdout, *) 'GLQ samples: ', 2 * lmax * lmax + 3 * lmax + 1
+    allocate(cilm(2, lmax_calc + 1, lmax_calc + 1), w(lmax + 1), zero(lmax + 1),&
+    plx(lmax + 1, lmax * lmax / 2 + 3 * lmax / 2 + 1))
+    call shglq(&
+      lmax = lmax,&
+      zero = zero,&
+      w = w,&
+      plx = plx,&
+      norm = 1,&
+      csphase = 1,&
+      cnorm = 0,&
+      exitstatus = exit_status)
+    call shexpandglq(&
+      cilm = cilm,&
+      lmax = lmax,&
+      gridglq = grid_2d,&
+      w = w,&
+      plx = plx,&
+      zero = zero,&
+      norm = 1,&
+      csphase = 1,&
+      lmax_calc = lmax_calc,&
+      exitstatus = exit_status)
   end select
   call sh_writer(sh_file, cilm, lmax_calc)
 end program sh_expand

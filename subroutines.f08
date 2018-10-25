@@ -3,7 +3,7 @@ contains
 subroutine grid_reader(file_name, mode, grid_reg_2d, grid_reg_1d, grid_irr_1d, grid_glq_2d, n_lat, n_points, lat, lon, lmax)
   implicit none
   character(*), intent(in) :: file_name, mode
-  real(kind=8), dimension(:,:), allocatable, intent(out), optional :: grid_reg_2d
+  real(kind=8), dimension(:,:), allocatable, intent(out), optional :: grid_reg_2d, grid_glq_2d
   real(kind=8), dimension(:), allocatable, intent(out), optional :: grid_reg_1d, grid_irr_1d,lat,lon
   real(kind=8) :: lat_i, lon_i
   integer(kind=4), intent(out), optional :: n_lat, n_points, lmax
@@ -18,7 +18,7 @@ subroutine grid_reader(file_name, mode, grid_reg_2d, grid_reg_1d, grid_irr_1d, g
     if(present(grid_reg_1d) .eqv. .true.) then
       enter_status = 1
       variable_name = 'grid_reg_1d'
-    if(present(grid_reg_2d) .eqv. .true.) then
+    else if(present(grid_reg_2d) .eqv. .true.) then
       enter_status = 1
       variable_name = 'grid_reg_2d'
     else if(present(grid_irr_1d) .eqv. .true.) then
@@ -52,7 +52,23 @@ subroutine grid_reader(file_name, mode, grid_reg_2d, grid_reg_1d, grid_irr_1d, g
         end if
       end do
       rewind(file_unit)
-      lmax = 
+      lmax = int((dsqrt(1._8 + 8._8 * real(n_lines, kind = 8)) - 3._8) / 4._8, kind = 4)
+      allocate(grid_glq_2d(lmax + 1, 2 * lmax + 1))
+      if((present(lat) .eqv. .true.) .and. (present(lon) .eqv. .true.)) then
+        allocate(lat(lmax + 1), lon(2 * lmax + 1))
+        do i = 1, lmax + 1
+          do j = 1, 2 * lmax + 1
+            read(file_unit, *) lat(i), lon(j), grid_glq_2d(i, j)
+          end do
+        end do
+      else
+        do i = 1, lmax + 1
+          do j = 1, 2 * lmax + 1
+            read(file_unit, *) lat_i, lon_i, grid_glq_2d(i, j)
+          end do
+        end do
+      end if
+      close(file_unit)
     end if
   case('reg_1d')
     if(present(grid_reg_2d) .eqv. .true.) then
