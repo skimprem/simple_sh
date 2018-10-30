@@ -258,10 +258,24 @@ end subroutine sh_writer
 subroutine sh_reader(file_name, cilm, lmax)
   implicit none
   character(*), intent(in) :: file_name
-  real(kind=8), dimension(:,:,:), intent(out) :: cilm
-  integer(kind=4), intent(in) :: lmax
-  integer(kind=4) :: i, j, file_unit, degree, order
+  real(kind=8), dimension(:,:,:), allocatable, intent(out) :: cilm
+  integer(kind=4), intent(out) :: lmax
+  integer(kind=4) :: i, j, file_unit, degree, order, n_lines,&
+  io_status
   open(newunit = file_unit, file = file_name, action = 'read')
+  n_lines = 0
+  do
+    read(file_unit, *, iostat = io_status)
+    if(io_status == 0) then
+      n_lines = n_lines + 1
+      cycle
+    else
+      exit
+    end if
+  end do
+  rewind(file_unit)
+  lmax = int((dsqrt(1._8 + 8._8 * real(n_lines, kind = 8)) - 3._8) / 2._8, kind = 8)
+  allocate(cilm(2, lmax + 1, lmax + 1))
   do i = 0, lmax
     do j = 0, i
       read(file_unit, *) degree, order, cilm(1, i + 1, j + 1), cilm(2, i + 1, j + 1)
