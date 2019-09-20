@@ -6,7 +6,7 @@ program sh_makegrid
   real(kind=8), dimension(:,:,:), allocatable :: cilm
   integer(kind=4) :: lmax, n_lat, n_lon, norm, cs_phase_mode, dealloc, exit_status,&
   stdout, i, j, sampling_mode, lmax_calc
-  real(kind=8) :: d_lat, flattening, major_semiaxis, north, south, east, west
+  real(kind=8) :: d_lat, d_lon, flattening, major_semiaxis, north, south, east, west
   character(len=1000) :: arg
   character(len=:), allocatable :: grid_file, sh_file, sh_method
   arg = ''
@@ -108,7 +108,7 @@ program sh_makegrid
       lmax = lmax,&
       norm = norm,&
       sampling = sampling_mode,&
-      csphase = csphase,&
+      csphase = cs_phase_mode,&
       lmax_calc = lmax_calc,&
       exitstatus = exit_status)
   end select

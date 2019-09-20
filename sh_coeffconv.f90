@@ -1,4 +1,4 @@
-program ab2cs
+program coeffconv 
   use subroutines
   implicit none
   real(kind = 8), dimension(:), allocatable :: coeff_cs, coeff_ab
@@ -35,7 +35,8 @@ program ab2cs
       call get_command_argument(i, arg)
       read(arg, *) ae
       write(stdout, *) 'ae: ', double_to_string(ae) 
+    case('-into')
     end select
   end do
   call cstoab(.false., lmax, )
-end program ab2cs
+end program coeffconv

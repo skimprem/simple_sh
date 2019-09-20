@@ -102,10 +102,6 @@ subroutine grid_reader(file_name, mode, grid_reg_2d, grid_reg_1d, grid_irr_1d, g
       n_lat = int(dsqrt(real(n_lines, kind = 8) / 2), kind = 4)
       allocate(grid_reg_1d(n_lines))
       if((present(lat) .eqv. .true.) .and. (present(lon) .eqv. .true.)) then
-        do i = 1, n_lines
-          read(file_unit, *) lat_i, lon_i, grid_reg_1d(i)
-        end do
-      else
         n_lon = n_lat * 2
         allocate(lat(n_lat), lon(n_lon))
         k = 0
@@ -115,8 +111,12 @@ subroutine grid_reader(file_name, mode, grid_reg_2d, grid_reg_1d, grid_irr_1d, g
             read(file_unit, *) lat(i), lon(j), grid_reg_1d(k)
           end do
         end do
-      close(file_unit)
+      else
+        do i = 1, n_lines
+          read(file_unit, *) lat_i, lon_i, grid_reg_1d(i)
+        end do
       end if
+      close(file_unit)
     end if
   case('reg_2d')
     if(present(grid_reg_1d) .eqv. .true.) then
@@ -660,5 +660,4 @@ function mem_info_int(value, units_mode)
     i = i + 1
   end do
 end function mem_info_int
-
 end module subroutines

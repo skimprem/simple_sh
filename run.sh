@@ -1,11 +1,12 @@
 #!/bin/bash
 
-ingrid=grid_30m.in
+#ingrid=grid_30m.in
+ingrid=dg_adj_7.5m.xyz
 outgrid=grid.out
 outcoeff=coeff
 incoeff=$outcoeff
-degree=180
-step=1
+degree=1440
+step=0.125
 method=int
 #method=ls
 #method=dh
