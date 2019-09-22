@@ -23,22 +23,22 @@ program sh_expand
       i = i + 1
       call get_command_argument(i, arg)
       grid_file = trim(adjustl(arg))
-      write(stdout, *) 'input: ', grid_file
+      write(stdout, *) 'input: ', color(grid_file, c_green) 
     case('-out')
       i = i + 1
       call get_command_argument(i, arg)
       sh_file = trim(adjustl(arg))
-      write(stdout, *) 'output: ', sh_file
+      write(stdout, *) 'output: ', color(sh_file, c_green)
     case('-deg')
       i = i + 1
       call get_command_argument(i, arg)
       read(arg, *) lmax_calc
-      write(stdout, *) 'degree: ', integer_to_string(lmax_calc)
+      write(stdout, *) 'degree: ', color(integer_to_string(lmax_calc), c_green)
     case('-mode')
       i = i + 1
       call get_command_argument(i, arg)
       sh_method = trim(adjustl(arg))
-      write(stdout, *) 'method: ', sh_method
+      write(stdout, *) 'method: ', color(sh_method, c_green)
     end select
   end do
   select case(sh_method)
