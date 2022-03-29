@@ -7,9 +7,9 @@ outcoeff=coeff
 incoeff=$outcoeff
 degree=1440
 step=0.125
-method=int
+#method=int
 #method=ls
-#method=dh
+method=dh
 #method=lsq
 
 ./build/sh_expand \
